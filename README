@@ -1,0 +1,51 @@
+                  The luaewts library and TeX package
+                  
+The luaewts library is a simple parser for the EWTS tibetan notation, as
+on http://www.thlib.org/reference/transliteration/#essay=/thl/ewts/intro/ . The
+library itself simply provides ewts.translate in lua which takes a string of 
+EWTS written tibetan an returns the Unicode equivalent.
+
+Other files present in this package are packages and examples for TeX (working
+only with the LuaTeX engine). See the example to see how to use it.
+
+Note that the parser is not fully equal to the one you can find here
+http://www.digitaltibetan.org/cgi-bin/wylie.pl as it respects the EWTS system
+more carefully (especially on the standard stacks) and is thus more rigid, but
+faster.
+
+
+Installing:
+===========
+
+To install the package the first thing you need is to build the library. You
+need a C building chain, flex and also the lua headers to achieve this.
+
+Once you installed everything, launch the ./build.sh script, and it will produce
+LuaEWTS_lib.so (or .dll for Windows). You can also cross-compile from Linux to
+Windows with Mingw32 by passing the --mingw option to ./build.sh. Note that you
+need lua51.dll to cross-compile; this file can be found in the LuaXML archive.
+
+Once you have LuaEWTS_lib.so, put it in a directory searchable by Lua(TeX) and
+everything should work fine.
+
+
+License:
+========
+
+The files of this package are Copyright 2010 Elie Roux
+<elie.roux@telecom-bretagne.eu> and are under the Creative Commons CC0 license.
+
+See the full text at
+
+http://creativecommons.org/publicdomain/zero/1.0/legalcode
+
+and a FAQ at
+
+http://wiki.creativecommons.org/CC0
+
+
+Thanks:
+=======
+
+The author would like to thank The Tibetan and Himalayan Library (THL) for their
+work in this area.

@@ -1,0 +1,46 @@
+% 
+% luaewts library loading file.
+% Copyright 2010 Elie Roux <elie.roux@telecom-bretagne.eu>
+% 
+% This file is under the Creative Commons CC0 license.
+% 
+% See the full text at
+% 
+% http://creativecommons.org/publicdomain/zero/1.0/legalcode
+% 
+% and a FAQ at
+% 
+% http://wiki.creativecommons.org/CC0
+
+\csname ifluaewtsloaded\endcsname
+\let\ifluaewtsloaded\endinput
+
+\bgroup\expandafter\expandafter\expandafter\egroup
+\expandafter\ifx\csname ProvidesPackage\endcsname\else
+  \NeedsTeXFormat{LaTeX2e}
+  \ProvidesPackage{luaewts}%
+    [2010/08/26 v0.7 Extended Wylie tibetan transcription.]
+\fi
+
+\directlua{require("luaewts")}
+
+\def\ewtssetupcatcodes{
+  \catcode`\ =12 \catcode`\#=12 \catcode`\^=12 \catcode`\~=12 \catcode`\:=12 
+  \catcode`\_=12 \catcode`\%=12 \catcode`\&=12 \catcode`\$=12 \catcode`\!=12
+  \catcode`\?=12 \catcode`\,=12 \catcode`\;=12 \catcode`\\=12
+}
+
+\def\ewtranslate{%
+  \bgroup %
+  \ewtssetupcatcodes %
+  \ewtsdo %
+}
+
+\long\def\ewtsdo#1{%
+  \egroup %
+  \ewtsprocess{#1}%
+}
+
+\long\def\ewtsprocess#1{%
+  \directlua{ewts.translatetotex([[#1]])}%
+}

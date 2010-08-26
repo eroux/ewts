@@ -1,0 +1,19 @@
+\documentclass{article}
+\usepackage{luaotfload}
+\usepackage[EU2]{fontenc}
+\usepackage{luaewts}
+
+\begin{document}
+
+% to get the free font Jomolhari, go to https://collab.itc.virginia.edu/access/wiki/site/26a34146-33a6-48ce-001e-f16ce7908a6a/jomolhari%20id.html
+
+\font\tibetfont=file:Jomolhari-ID-a3d.ttf:script=tibt;lang=tibt;+kern;+ccmp;+blws;+abvs; at 14pt
+
+\tibetfont
+
+% set this if you want automatic line breaking
+\exhyphenchar=`\་
+
+\ewtranslate{oM aHhU~M` badzra gu ru pad+ma \uF03 sid+dhi hU~M`:}
+
+\end{document}
