@@ -272,6 +272,7 @@ add_verb(char *str)
 <verb>\]     { BEGIN(INITIAL); }
 \\u[0-9a-fA-F]{3,4}     { add_uni(ewts_text+2); }
 k     { add_cons(c_k); }
+c     { add_cons(c_c); }
 kh    { add_cons(c_kh); }
 g     { add_cons(c_g); }
 ng    { add_cons(c_ng); }
