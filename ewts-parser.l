@@ -30,6 +30,7 @@ http://wiki.creativecommons.org/CC0
 unsigned char last_is_plus = 0;
 unsigned char current_state = S_INITIAL;
 unsigned char last_cons_num = 0;
+unsigned char nb_cons = 0;
 char nb_vow = 0;
 
 // everything is made with globar variables, which is a bit dangerous...
@@ -43,6 +44,7 @@ int utfbufindex = 0;
  last_is_plus = 0;\
  current_state = S_INITIAL;\
  last_cons_num = 0;\
+ nb_cons = 0;\
  nb_vow = 0;
 
 // this function prints a char in utfbuf in utf8 and sets bufindex accordingly
@@ -90,6 +92,7 @@ print_unichar (pwchar to_print)
          _reinitialize()\
          print_unichar(cons_initial[cons]);\
          current_state = S_WAIT_CONS;\
+         nb_cons = nb_cons + 1;\
       }
 
 void
@@ -104,12 +107,14 @@ add_cons(unsigned char cons)
       case S_INITIAL:
         print_unichar(cons_initial[cons]);
         current_state = S_WAIT_CONS;
+        nb_cons = nb_cons + 1;
         break;
       case S_WAIT_CONS:
         if (last_is_plus == 1)
           {
             print_unichar(cons_subjoined[cons]);
             current_state = S_WAIT_END;
+            nb_cons = nb_cons + 1;
           }
         else
           {
@@ -120,6 +125,7 @@ add_cons(unsigned char cons)
                     {
                       print_unichar(cons_subjoined[cons]);
                       current_state = S_WAIT_END;
+                      nb_cons = nb_cons + 1;
                     }
                   elsereinit();
                   break;
@@ -128,6 +134,7 @@ add_cons(unsigned char cons)
                     {
                       print_unichar(cons_subjoined[cons]);
                       current_state = S_WAIT_END;
+                      nb_cons = nb_cons + 1;
                     }
                   elsereinit();
                   break;
@@ -136,6 +143,7 @@ add_cons(unsigned char cons)
                     {
                       print_unichar(cons_subjoined[cons]);
                       current_state = S_WAIT_END;
+                      nb_cons = nb_cons + 1;
                     }
                   elsereinit();
                   break;
@@ -143,6 +151,7 @@ add_cons(unsigned char cons)
                   _reinitialize()
                   print_unichar(cons_initial[cons]);
                   current_state = S_WAIT_CONS;
+                  nb_cons = nb_cons + 1;
               }
           }
         break;
@@ -151,42 +160,48 @@ add_cons(unsigned char cons)
         if (last_is_plus == 1)
           {
             print_unichar(cons_subjoined[cons]);
+            nb_cons = nb_cons + 1;
           }
         else
           {
             switch(cons)
               {
                 case c_r:
-                  if (left_combine_r[cons] == 1)
+                  if (left_combine_r[cons] == 1 && nb_cons < 3)
                     {
                       print_unichar(cons_subjoined[cons]);
+                      nb_cons = nb_cons + 1;
                     }
                   elsereinit();
                   break;
                 case c_l:
-                  if (left_combine_l[cons] == 1)
+                  if (left_combine_l[cons] == 1 && nb_cons < 3)
                     {
                       print_unichar(cons_subjoined[cons]);
+                      nb_cons = nb_cons + 1;
                     }
                   elsereinit();
                   break;
                 case c_w:
-                  if (left_combine_w[cons] == 1)
+                  if (left_combine_w[cons] == 1 && nb_cons < 3)
                     {
                       print_unichar(cons_subjoined[cons]);
+                      nb_cons = nb_cons + 1;
                     }
                   elsereinit();
                   break;
                 case c_y:
-                  if (left_combine_y[cons] == 1)
+                  if (left_combine_y[cons] == 1 && nb_cons < 3)
                     {
                       print_unichar(cons_subjoined[cons]);
+                      nb_cons = nb_cons + 1;
                     }
                   elsereinit();
                   break;
                 default:
                   _reinitialize()
                   print_unichar(cons_initial[cons]);
+                  nb_cons = nb_cons + 1;
                   current_state = S_WAIT_CONS;
                   
               }
@@ -194,6 +209,7 @@ add_cons(unsigned char cons)
         break;
     }
   last_cons_num = cons;
+  last_is_plus = 0;
 }
 
 void
@@ -222,6 +238,7 @@ add_vowel(unsigned char vow)
       print_unichar(cons_initial[c_none]);
       print_unichar(vowelchars[vow]);
     }
+  last_is_plus = 0;
 }
 
 void
