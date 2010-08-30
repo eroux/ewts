@@ -148,10 +148,48 @@ add_cons(unsigned char cons)
                   elsereinit();
                   break;
                 default:
-                  _reinitialize()
-                  print_unichar(cons_initial[cons]);
-                  current_state = S_WAIT_CONS;
-                  nb_cons = nb_cons + 1;
+                  switch(cons)
+                  {
+                    case c_r:
+                      if (left_combine_r[last_cons_num] == 1 && nb_cons < 3)
+                        {
+                          print_unichar(cons_subjoined[cons]);
+                          nb_cons = nb_cons + 1;
+                        }
+                      elsereinit();
+                      break;
+                    case c_l:
+                      if (left_combine_l[last_cons_num] == 1 && nb_cons < 3)
+                        {
+                          print_unichar(cons_subjoined[cons]);
+                          nb_cons = nb_cons + 1;
+                        }
+                      elsereinit();
+                      break;
+                    case c_w:
+                      if (left_combine_w[last_cons_num] == 1 && nb_cons < 3)
+                        {
+                          print_unichar(cons_subjoined[cons]);
+                          nb_cons = nb_cons + 1;
+                        }
+                      elsereinit();
+                      break;
+                    case c_y:
+                      printf("%d\n", left_combine_y[last_cons_num]);
+                      if (left_combine_y[last_cons_num] == 1 && nb_cons < 3)
+                        {
+                          print_unichar(cons_subjoined[cons]);
+                          nb_cons = nb_cons + 1;
+                        }
+                      elsereinit();
+                      break;
+                    default:
+                      _reinitialize()
+                      print_unichar(cons_initial[cons]);
+                      nb_cons = nb_cons + 1;
+                      current_state = S_WAIT_CONS;
+                      
+                  }
               }
           }
         break;
@@ -167,7 +205,7 @@ add_cons(unsigned char cons)
             switch(cons)
               {
                 case c_r:
-                  if (left_combine_r[cons] == 1 && nb_cons < 3)
+                  if (left_combine_r[last_cons_num] == 1 && nb_cons < 3)
                     {
                       print_unichar(cons_subjoined[cons]);
                       nb_cons = nb_cons + 1;
@@ -175,7 +213,7 @@ add_cons(unsigned char cons)
                   elsereinit();
                   break;
                 case c_l:
-                  if (left_combine_l[cons] == 1 && nb_cons < 3)
+                  if (left_combine_l[last_cons_num] == 1 && nb_cons < 3)
                     {
                       print_unichar(cons_subjoined[cons]);
                       nb_cons = nb_cons + 1;
@@ -183,7 +221,7 @@ add_cons(unsigned char cons)
                   elsereinit();
                   break;
                 case c_w:
-                  if (left_combine_w[cons] == 1 && nb_cons < 3)
+                  if (left_combine_w[last_cons_num] == 1 && nb_cons < 3)
                     {
                       print_unichar(cons_subjoined[cons]);
                       nb_cons = nb_cons + 1;
@@ -191,7 +229,7 @@ add_cons(unsigned char cons)
                   elsereinit();
                   break;
                 case c_y:
-                  if (left_combine_y[cons] == 1 && nb_cons < 3)
+                  if (left_combine_y[last_cons_num] == 1 && nb_cons < 3)
                     {
                       print_unichar(cons_subjoined[cons]);
                       nb_cons = nb_cons + 1;
