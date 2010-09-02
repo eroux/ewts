@@ -28,8 +28,11 @@ http://wiki.creativecommons.org/CC0
 #include "lualib.h"
 
 
+// we redeclare yylex to pass an argument to it
+#define YY_DECL int ewts_lex (ewts_state *curstate)
+
 // the state is a global variable... looking for passing arguments to yylex...
-ewts_state *curstate;
+//ewts_state *curstate;
 
 inline void ewts_reinitialize(ewts_state *s)
 {
@@ -45,7 +48,7 @@ inline void ewts_reinitialize(ewts_state *s)
 
 // this function prints a char in utfbuf in utf8 and sets bufindex accordingly
 void
-print_unichar (pwchar to_print)
+ewts_print_unichar (pwchar to_print, ewts_state *curstate)
 {
   char *buf = curstate->utfbuf + curstate->utfbufindex;
   if (!to_print)
@@ -81,6 +84,8 @@ print_unichar (pwchar to_print)
     }
 }
 
+#define print_unichar(char) ewts_print_unichar(char, curstate);
+
 // helper
 #define elsereinit() \
     else \
@@ -92,7 +97,7 @@ print_unichar (pwchar to_print)
       }
 
 void
-add_cons(unsigned char cons)
+ewts_add_cons(unsigned char cons, ewts_state *curstate)
 {
   if (curstate->nb_vow != 0)
     {
@@ -247,7 +252,7 @@ add_cons(unsigned char cons)
 }
 
 void
-add_vowel(unsigned char vow)
+ewts_add_vowel(unsigned char vow, ewts_state *curstate)
 {
   if (curstate->current_state == S_INITIAL)
     {
@@ -277,27 +282,35 @@ add_vowel(unsigned char vow)
 }
 
 void
-add_other(pwchar num)
+ewts_add_other(pwchar num, ewts_state *curstate)
 {
   _reinitialize();
   print_unichar(num);
 }
 
 void
-add_verb(char *str)
+ewts_add_verb(char *str, ewts_state *curstate)
 {
   _reinitialize();
   sprintf (curstate->utfbuf+curstate->utfbufindex, "%s", str);
 	curstate->utfbufindex = curstate->utfbufindex + (int) strlen(str);
 }
 
-#define add_num(num) add_other(digchars[num]);
+#define add_cons(num) ewts_add_cons(num, curstate);
+
+#define add_vowel(num) ewts_add_vowel(num, curstate);
+
+#define add_verb(str) ewts_add_verb(str, curstate);
+
+#define add_num(num) ewts_add_other(digchars[num], curstate);
 
 #define plus_sign() curstate->last_is_plus = 1;
 
-#define dot_sign() _reinitialize();
+#define dot_sign() ewts_reinitialize(curstate);
 
-#define add_uni(str) add_other(strtol(str, NULL, 16));
+#define add_uni(str) ewts_add_other(strtol(str, NULL, 16), curstate);
+
+#define add_other(num) ewts_add_other(num, curstate)
 
 %}
 
@@ -438,11 +451,11 @@ char* ewts_scanner(char *argstr)
 {
     YY_BUFFER_STATE ybuf;
     size_t len = 0;
-    curstate = new_state();
+    ewts_state *curstate = new_state();
     len = strlen(argstr);
     curstate->utfbuf = (char *) malloc((len*4+1)*sizeof(char));
     ybuf=yy_scan_string(argstr);
-    yylex();
+    yylex(curstate);
     yy_flush_buffer(ybuf);
     yy_delete_buffer(ybuf);
     curstate->utfbuf[curstate->utfbufindex] = 0;
