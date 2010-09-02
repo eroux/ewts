@@ -326,6 +326,7 @@ add_verb(char *str)
 <verb>[^\]]+ { add_verb(strdup(ewts_text)); }
 <verb>\]     { BEGIN(INITIAL); }
 \\u[0-9a-fA-F]{3,4}     { add_uni(ewts_text+2); }
+\+a     { plus_sign(); add_cons(c_none); }
 k     { add_cons(c_k); }
 c     { add_cons(c_c); }
 kh    { add_cons(c_kh); }
@@ -369,7 +370,7 @@ Sh    { add_cons(c_Sh); }
 (kSh|k+Sh)   { add_cons(c_kSh); }
 f     { add_cons(c_f); }
 v     { add_cons(c_v); }
-(om|Om|OM|oM) { add_cons(c_OM); }
+(OM|oM) { add_cons(c_OM); }
 W     { add_cons(c_W); }
 Y     { add_cons(c_Y); }
 a     { add_vowel(v_a); }
@@ -422,20 +423,11 @@ H     { add_other(0xf7f); }
 
 %%
 
-// quite useful template if you whish to integrate a lib into LuaTeX.
-static int ewts_scanner(lua_State *L)
+char* ewts_scanner(char *argstr)
 {
     YY_BUFFER_STATE ybuf;
     size_t len = 0;
-    char *argstr;
-    if (!lua_isstring(L, 1))
-      {
-        lua_pushnil(L);
-        lua_pushstring(L, "incorrect argument, string expected");
-        lua_error(L);
-        return 0;
-      }
-    argstr = luaL_checklstring(L, 1, &len);
+    len = strlen(argstr);
     utfbuf = (char *) malloc((len*4+1)*sizeof(char));
     utfbufindex = 0;
     ybuf=yy_scan_string(argstr);
@@ -443,14 +435,31 @@ static int ewts_scanner(lua_State *L)
     yy_flush_buffer(ybuf);
     yy_delete_buffer(ybuf);
     utfbuf[utfbufindex] = 0;
-    lua_pushstring(L, utfbuf);
-    free(utfbuf);
+    return utfbuf;
+}
+
+// quite useful template if you whish to integrate a lib into LuaTeX.
+static int lua_ewts_scanner(lua_State *L)
+{
+    char *argstr;
+    char *res;
+    if (!lua_isstring(L, 1))
+      {
+        lua_pushnil(L);
+        lua_pushstring(L, "incorrect argument, string expected");
+        lua_error(L);
+        return 0;
+      }
+    argstr = luaL_checklstring(L, 1, NULL);
+    res = ewts_scanner(argstr);
+    lua_pushstring(L, res);
+    free(res);
     return 1;
 }
 
 int _EXPORT luaopen_LuaEWTS_lib (lua_State* L) {
         static const struct luaL_Reg funcs[] = {
-                {"translate", ewts_scanner},
+                {"translate", lua_ewts_scanner},
                 {NULL, NULL}
         };
         luaL_register(L, "ewts", funcs);

@@ -34,6 +34,9 @@ http://wiki.creativecommons.org/CC0
 # define _EXPORT
 #endif
 
+// the public function
+char* ewts_scanner(char *argstr);
+
 // consonants
 
 #define c_k 1
