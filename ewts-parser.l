@@ -27,31 +27,27 @@ http://wiki.creativecommons.org/CC0
 #include "lauxlib.h"
 #include "lualib.h"
 
-unsigned char last_is_plus = 0;
-unsigned char current_state = S_INITIAL;
-unsigned char last_cons_num = 0;
-unsigned char nb_cons = 0;
-char nb_vow = 0;
 
-// everything is made with globar variables, which is a bit dangerous...
-// patches accepted ;)
+// the state is a global variable... looking for passing arguments to yylex...
+ewts_state *curstate;
 
-// string writing variables
-char *utfbuf = NULL;
-int utfbufindex = 0;
+inline void ewts_reinitialize(ewts_state *s)
+{
+  s->last_is_plus = 0;
+  s->current_state = S_INITIAL;
+  s-> last_cons_num = 0;
+  s-> nb_cons = 0;
+  s->nb_vow = 0;
+}
 
 #define _reinitialize() \
- last_is_plus = 0;\
- current_state = S_INITIAL;\
- last_cons_num = 0;\
- nb_cons = 0;\
- nb_vow = 0;
+ ewts_reinitialize(curstate);
 
 // this function prints a char in utfbuf in utf8 and sets bufindex accordingly
 void
 print_unichar (pwchar to_print)
 {
-  char *buf = utfbuf + utfbufindex;
+  char *buf = curstate->utfbuf + curstate->utfbufindex;
   if (!to_print)
     {
       return;
@@ -59,13 +55,13 @@ print_unichar (pwchar to_print)
   if (to_print <= 0x7F)
     {
       sprintf (buf, "%c", (unsigned char) to_print);
-      utfbufindex = utfbufindex + 1;
+      curstate->utfbufindex = curstate->utfbufindex + 1;
       return;
     }
   if (to_print >= 0x80 && to_print <= 0x7FF)
     {
       sprintf (buf, "%c%c", 0xC0 | (to_print >> 6), 0x80 | (to_print & 0x3F));
-      utfbufindex = utfbufindex + 2;
+      curstate->utfbufindex = curstate->utfbufindex + 2;
       return;
     }
   if ((to_print >= 0x800 && to_print <= 0xD7FF) ||
@@ -73,7 +69,7 @@ print_unichar (pwchar to_print)
     {
       sprintf (buf, "%c%c%c", 0xE0 | (to_print >> 12),
 	       0x80 | ((to_print >> 6) & 0x3F), 0x80 | (to_print & 0x3F));
-	    utfbufindex = utfbufindex + 3;
+	    curstate->utfbufindex = curstate->utfbufindex + 3;
 	    return;
     }
   if (to_print >= 0x10000 && to_print <= 0x10FFFF)
@@ -81,7 +77,7 @@ print_unichar (pwchar to_print)
       sprintf (buf, "%c%c%c%c", 0xF0 | (to_print >> 18),
 	       0x80 | ((to_print >> 12) & 0x3F),
 	       0x80 | ((to_print >> 6) & 0x3F), 0x80 | (to_print & 0x3F));
-	    utfbufindex = utfbufindex + 4;
+	    curstate->utfbufindex = curstate->utfbufindex + 4;
     }
 }
 
@@ -91,41 +87,41 @@ print_unichar (pwchar to_print)
       {\
          _reinitialize()\
          print_unichar(cons_initial[cons]);\
-         current_state = S_WAIT_CONS;\
-         nb_cons = nb_cons + 1;\
+         curstate->current_state = S_WAIT_CONS;\
+         curstate->nb_cons = curstate->nb_cons + 1;\
       }
 
 void
 add_cons(unsigned char cons)
 {
-  if (nb_vow != 0)
+  if (curstate->nb_vow != 0)
     {
       _reinitialize();
     }
-  switch(current_state)
+  switch(curstate->current_state)
     {
       case S_INITIAL:
         print_unichar(cons_initial[cons]);
-        current_state = S_WAIT_CONS;
-        nb_cons = nb_cons + 1;
+        curstate->current_state = S_WAIT_CONS;
+        curstate->nb_cons = curstate->nb_cons + 1;
         break;
       case S_WAIT_CONS:
-        if (last_is_plus == 1)
+        if (curstate->last_is_plus == 1)
           {
             print_unichar(cons_subjoined[cons]);
-            current_state = S_WAIT_END;
-            nb_cons = nb_cons + 1;
+            curstate->current_state = S_WAIT_END;
+            curstate->nb_cons = curstate->nb_cons + 1;
           }
         else
           {
-            switch(last_cons_num)
+            switch(curstate->last_cons_num)
               {
                 case c_r:
                   if (right_combine_r[cons] == 1)
                     {
                       print_unichar(cons_subjoined[cons]);
-                      current_state = S_WAIT_END;
-                      nb_cons = nb_cons + 1;
+                      curstate->current_state = S_WAIT_END;
+                      curstate->nb_cons = curstate->nb_cons + 1;
                     }
                   elsereinit();
                   break;
@@ -133,8 +129,8 @@ add_cons(unsigned char cons)
                   if (right_combine_l[cons] == 1)
                     {
                       print_unichar(cons_subjoined[cons]);
-                      current_state = S_WAIT_END;
-                      nb_cons = nb_cons + 1;
+                      curstate->current_state = S_WAIT_END;
+                      curstate->nb_cons = curstate->nb_cons + 1;
                     }
                   elsereinit();
                   break;
@@ -142,8 +138,8 @@ add_cons(unsigned char cons)
                   if (right_combine_s[cons] == 1)
                     {
                       print_unichar(cons_subjoined[cons]);
-                      current_state = S_WAIT_END;
-                      nb_cons = nb_cons + 1;
+                      curstate->current_state = S_WAIT_END;
+                      curstate->nb_cons = curstate->nb_cons + 1;
                     }
                   elsereinit();
                   break;
@@ -151,43 +147,43 @@ add_cons(unsigned char cons)
                   switch(cons)
                   {
                     case c_r:
-                      if (left_combine_r[last_cons_num] == 1 && nb_cons < 3)
+                      if (left_combine_r[curstate->last_cons_num] == 1 && curstate->nb_cons < 3)
                         {
                           print_unichar(cons_subjoined[cons]);
-                          nb_cons = nb_cons + 1;
+                          curstate->nb_cons = curstate->nb_cons + 1;
                         }
                       elsereinit();
                       break;
                     case c_l:
-                      if (left_combine_l[last_cons_num] == 1 && nb_cons < 3)
+                      if (left_combine_l[curstate->last_cons_num] == 1 && curstate->nb_cons < 3)
                         {
                           print_unichar(cons_subjoined[cons]);
-                          nb_cons = nb_cons + 1;
+                          curstate->nb_cons = curstate->nb_cons + 1;
                         }
                       elsereinit();
                       break;
                     case c_w:
-                      if (left_combine_w[last_cons_num] == 1 && nb_cons < 3)
+                      if (left_combine_w[curstate->last_cons_num] == 1 && curstate->nb_cons < 3)
                         {
                           print_unichar(cons_subjoined[cons]);
-                          nb_cons = nb_cons + 1;
+                          curstate->nb_cons = curstate->nb_cons + 1;
                         }
                       elsereinit();
                       break;
                     case c_y:
-                      printf("%d\n", left_combine_y[last_cons_num]);
-                      if (left_combine_y[last_cons_num] == 1 && nb_cons < 3)
+                      printf("%d\n", left_combine_y[curstate->last_cons_num]);
+                      if (left_combine_y[curstate->last_cons_num] == 1 && curstate->nb_cons < 3)
                         {
                           print_unichar(cons_subjoined[cons]);
-                          nb_cons = nb_cons + 1;
+                          curstate->nb_cons = curstate->nb_cons + 1;
                         }
                       elsereinit();
                       break;
                     default:
                       _reinitialize()
                       print_unichar(cons_initial[cons]);
-                      nb_cons = nb_cons + 1;
-                      current_state = S_WAIT_CONS;
+                      curstate->nb_cons = curstate->nb_cons + 1;
+                      curstate->current_state = S_WAIT_CONS;
                       
                   }
               }
@@ -195,80 +191,81 @@ add_cons(unsigned char cons)
         break;
       default:
         // S_WAIT_END, quite similar
-        if (last_is_plus == 1)
+        if (curstate->last_is_plus == 1)
           {
             print_unichar(cons_subjoined[cons]);
-            nb_cons = nb_cons + 1;
+            curstate->nb_cons = curstate->nb_cons + 1;
           }
         else
           {
             switch(cons)
               {
                 case c_r:
-                  if (left_combine_r[last_cons_num] == 1 && nb_cons < 3)
+                  if (left_combine_r[curstate->last_cons_num] == 1 && curstate->nb_cons < 3)
                     {
                       print_unichar(cons_subjoined[cons]);
-                      nb_cons = nb_cons + 1;
+                      curstate->nb_cons = curstate->nb_cons + 1;
                     }
                   elsereinit();
                   break;
                 case c_l:
-                  if (left_combine_l[last_cons_num] == 1 && nb_cons < 3)
+                  if (left_combine_l[curstate->last_cons_num] == 1 && curstate->nb_cons < 3)
                     {
                       print_unichar(cons_subjoined[cons]);
-                      nb_cons = nb_cons + 1;
+                      curstate->nb_cons = curstate->nb_cons + 1;
                     }
                   elsereinit();
                   break;
                 case c_w:
-                  if (left_combine_w[last_cons_num] == 1 && nb_cons < 3)
+                  if (left_combine_w[curstate->last_cons_num] == 1 && curstate->nb_cons < 3)
                     {
                       print_unichar(cons_subjoined[cons]);
-                      nb_cons = nb_cons + 1;
+                      curstate->nb_cons = curstate->nb_cons + 1;
                     }
                   elsereinit();
                   break;
                 case c_y:
-                  if (left_combine_y[last_cons_num] == 1 && nb_cons < 3)
+                  if (left_combine_y[curstate->last_cons_num] == 1 && curstate->nb_cons < 3)
                     {
                       print_unichar(cons_subjoined[cons]);
-                      nb_cons = nb_cons + 1;
+                      curstate->nb_cons = curstate->nb_cons + 1;
                     }
                   elsereinit();
                   break;
                 default:
                   _reinitialize()
                   print_unichar(cons_initial[cons]);
-                  nb_cons = nb_cons + 1;
-                  current_state = S_WAIT_CONS;
+                  curstate->nb_cons = curstate->nb_cons + 1;
+                  curstate->current_state = S_WAIT_CONS;
                   
               }
           }
         break;
     }
-  last_cons_num = cons;
-  last_is_plus = 0;
+  curstate->last_cons_num = cons;
+  curstate->last_is_plus = 0;
 }
 
 void
 add_vowel(unsigned char vow)
 {
-  if (current_state == S_INITIAL)
+  if (curstate->current_state == S_INITIAL)
     {
       print_unichar(cons_initial[c_none]);
       print_unichar(vowelchars[vow]);
-      nb_vow = nb_vow + 1;
+      curstate->nb_vow = curstate->nb_vow + 1;
       return;
     }
-  if (current_state == S_WAIT_CONS && vow == v_a && last_is_plus == 1)
+  if (curstate->current_state == S_WAIT_CONS && vow == v_a && curstate->last_is_plus == 1)
     {
       print_unichar(cons_subjoined[c_none]);
+      curstate->nb_cons = curstate->nb_cons + 1;
       return;
     }
-  if (last_is_plus == 1 || nb_vow == 0)
+  if (curstate->last_is_plus == 1 || curstate->nb_vow == 0)
     {
       print_unichar(vowelchars[vow]);
-      nb_vow = nb_vow + 1;
+      curstate->nb_vow = curstate->nb_vow + 1;
     }
   else
     {
@@ -276,7 +273,7 @@ add_vowel(unsigned char vow)
       print_unichar(cons_initial[c_none]);
       print_unichar(vowelchars[vow]);
     }
-  last_is_plus = 0;
+  curstate->last_is_plus = 0;
 }
 
 void
@@ -290,13 +287,13 @@ void
 add_verb(char *str)
 {
   _reinitialize();
-  sprintf (utfbuf+utfbufindex, "%s", str);
-	utfbufindex = utfbufindex + (int) strlen(str);
+  sprintf (curstate->utfbuf+curstate->utfbufindex, "%s", str);
+	curstate->utfbufindex = curstate->utfbufindex + (int) strlen(str);
 }
 
 #define add_num(num) add_other(digchars[num]);
 
-#define plus_sign() last_is_plus = 1;
+#define plus_sign() curstate->last_is_plus = 1;
 
 #define dot_sign() _reinitialize();
 
@@ -423,19 +420,33 @@ H     { add_other(0xf7f); }
 
 %%
 
+ewts_state *new_state()
+{
+  ewts_state *s;
+  s = malloc (sizeof (ewts_state));
+  s->utfbuf = NULL;
+  s->utfbufindex = 0;
+  s->last_is_plus = 0;
+  s->current_state = S_INITIAL;
+  s-> last_cons_num = 0;
+  s-> nb_cons = 0;
+  s->nb_vow = 0;
+  return s;
+}
+
 char* ewts_scanner(char *argstr)
 {
     YY_BUFFER_STATE ybuf;
     size_t len = 0;
+    curstate = new_state();
     len = strlen(argstr);
-    utfbuf = (char *) malloc((len*4+1)*sizeof(char));
-    utfbufindex = 0;
+    curstate->utfbuf = (char *) malloc((len*4+1)*sizeof(char));
     ybuf=yy_scan_string(argstr);
     yylex();
     yy_flush_buffer(ybuf);
     yy_delete_buffer(ybuf);
-    utfbuf[utfbufindex] = 0;
-    return utfbuf;
+    curstate->utfbuf[curstate->utfbufindex] = 0;
+    return curstate->utfbuf;
 }
 
 // quite useful template if you whish to integrate a lib into LuaTeX.

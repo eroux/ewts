@@ -37,8 +37,18 @@ http://wiki.creativecommons.org/CC0
 // the public function
 char* ewts_scanner(char *argstr);
 
-// consonants
+// the state struct
+typedef struct ewts_state {
+  char *utfbuf;
+  int utfbufindex;
+  unsigned char last_is_plus;
+  unsigned char current_state;
+  unsigned char last_cons_num;
+  unsigned char nb_cons;
+  unsigned char nb_vow;
+} ewts_state;
 
+// consonants
 #define c_k 1
 #define c_kh 2
 #define c_g 3
