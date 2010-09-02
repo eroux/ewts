@@ -447,7 +447,7 @@ ewts_state *new_state()
   return s;
 }
 
-char* ewts_scanner(char *argstr)
+char* ewts_scanner(const char *argstr)
 {
     YY_BUFFER_STATE ybuf;
     size_t len = 0;
@@ -465,7 +465,7 @@ char* ewts_scanner(char *argstr)
 // quite useful template if you whish to integrate a lib into LuaTeX.
 static int lua_ewts_scanner(lua_State *L)
 {
-    char *argstr;
+    const char *argstr;
     char *res;
     if (!lua_isstring(L, 1))
       {

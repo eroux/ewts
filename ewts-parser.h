@@ -35,7 +35,7 @@ http://wiki.creativecommons.org/CC0
 #endif
 
 // the public function
-char* ewts_scanner(char *argstr);
+char* ewts_scanner(const char *argstr);
 
 // the state struct
 typedef struct ewts_state {
