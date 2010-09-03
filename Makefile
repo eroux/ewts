@@ -1,5 +1,6 @@
 # generic compiler and linker settings:
 CC     = gcc
+LD     = ld
 
 ifeq ($(ARCH),)
     ARCH = $(shell uname -s)
@@ -10,7 +11,7 @@ ifeq ($(ARCH),Linux)
   POUET = $(shell echo prout)
   LUACFLAGS = $(shell pkg-config --cflags lua)
   LUALIBS   = $(shell pkg-config --libs lua)
-  CFLAGS = -fPIC -O2 -c $(LUACFLAGS)
+  CFLAGS = -fPIC -O2 -c $(LUACFLAGS) -DENABLE_LUA
   SHLIBSUFFIX = .so
   LINKFLAGS = -shared -Wl,-no-undefined,-soname=LuaEWTS_lib$(SHLIBSUFFIX) $(LUALIBS)
 else  
@@ -22,15 +23,16 @@ else
     ifeq ($(ARCH),Debian)
       LUACFLAGS = $(shell pkg-config --cflags lua5.1)
       LUALIBS   = $(shell pkg-config --libs lua5.1)
-      CFLAGS = -fPIC -O2 -c $(LUACFLAGS)
+      CFLAGS = -fPIC -O2 -c $(LUACFLAGS) -DENABLE_LUA
       SHLIBSUFFIX = .so
       LINKFLAGS = -shared -Wl,-no-undefined,-soname=LuaEWTS_lib$(SHLIBSUFFIX) $(LUALIBS)
     else # mingw
       CC = $(ARCH)-gcc
+      LD = $(ARCH)-ld
       ifeq ($(LINUXARCH),Debian)
-        CFLAGS = $(shell pkg-config --cflags lua5.1) -02 -c
+        CFLAGS = $(shell pkg-config --cflags lua5.1) -02 -c -DENABLE_LUA
       else
-        CFLAGS = $(shell pkg-config --cflags lua) -02 -c
+        CFLAGS = $(shell pkg-config --cflags lua) -02 -c -DENABLE_LUA
       endif
       SHLIBSUFFIX = .dll
       LINKFLAGS = -shared -mconsole -s -Wl,-no-undefined,-soname=LuaEWTS_lib$(SHLIBSUFFIX) -L. -llua51
@@ -38,7 +40,14 @@ else
   endif
 endif
 
-all:  LuaEWTS_lib$(SHLIBSUFFIX)
+all:  LuaEWTS_lib$(SHLIBSUFFIX) perl
+
+perl: ewts-parser.o ewts_wrap.c
+	$(CC) -c ewts-parser.c ewts_wrap.c `perl -MExtUtils::Embed -e ccopts`
+	ld -G ewts-parser.o ewts_wrap.o -o ewts.so
+
+ewts_wrap.c: ewts.i
+	swig -perl ewts.i
 
 LuaEWTS_lib$(SHLIBSUFFIX): ewts-parser.o
 	$(CC) $(LINKFLAGS) -o $@ ewts-parser.o
@@ -50,4 +59,4 @@ ewts-parser.c: ewts-parser.l
 	flex ewts-parser.l
 
 clean:
-	@rm -f ewts-parser.c ewts-parser.o LuaEWTS_lib.dll LuaEWTS_lib.so 
+	@rm -f ewts-parser.c ewts-parser.o LuaEWTS_lib.dll LuaEWTS_lib.so ewts_wrap.c ewts.pm ewts_wrap.o ewts.so
