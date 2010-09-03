@@ -21,11 +21,15 @@ http://wiki.creativecommons.org/CC0
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <ctype.h> /*for tolower*/
 #include "ewts-parser.h"
+#ifndef ENABLE_LUA
+#define ENABLE_NLS 0
+#endif
+#if ENABLE_LUA == 1
 #include "lua.h"
 #include "lauxlib.h"
 #include "lualib.h"
+#endif
 
 
 // we redeclare yylex to pass an argument to it
@@ -38,8 +42,7 @@ inline void ewts_reinitialize(ewts_state *s)
 {
   s->last_is_plus = 0;
   s->current_state = S_INITIAL;
-  s-> last_cons_num = 0;
-  s-> nb_cons = 0;
+  s-> last_stack_num = 0;
   s->nb_vow = 0;
 }
 
@@ -96,9 +99,51 @@ ewts_print_unichar (pwchar to_print, ewts_state *curstate)
          curstate->nb_cons = curstate->nb_cons + 1;\
       }
 
+
+// a function that returns the result of the combination of consone and constwo
+// result is NON_STANDARD_STACK, NON_COMBINABLE_STACK or the standard combinable stack number
+unsigned char
+// consone can be also a stack
+ewts_combine(unsigned char consone, unsigned char constwo)
+{
+  switch(consone)
+  {
+    case c_r:
+      return right_combine_r[constwo];
+      break;
+    case c_l:
+      return right_combine_l[constwo];
+      break;
+    case c_s:
+      return right_combine_s[constwo];
+      break;
+    default:
+      break;
+  }
+  switch(constwo)
+  {
+    case c_y:
+      return left_combine_y[consone];
+      break;
+    case c_r:
+      return left_combine_r[consone];
+      break;
+    case c_l:
+      return left_combine_l[consone];
+      break;
+    case c_w:
+      return left_combine_w[consone];
+      break;
+    default:
+      return NON_STANDARD_STACK;
+      break;
+  }
+}
+
 void
 ewts_add_cons(unsigned char cons, ewts_state *curstate)
 {
+  unsigned char newstack = 0;
   if (curstate->nb_vow != 0)
     {
       _reinitialize();
@@ -108,146 +153,41 @@ ewts_add_cons(unsigned char cons, ewts_state *curstate)
       case S_INITIAL:
         print_unichar(cons_initial[cons]);
         curstate->current_state = S_WAIT_CONS;
-        curstate->nb_cons = curstate->nb_cons + 1;
+        curstate->last_stack_num = cons;
         break;
       case S_WAIT_CONS:
-        if (curstate->last_is_plus == 1)
+      case S_WAIT_END:
+        newstack = ewts_combine(curstate->last_stack_num, cons);
+        if (newstack == NON_STANDARD_STACK && curstate->last_is_plus == 0)
+          {
+            _reinitialize();
+            print_unichar(cons_initial[cons]);
+            curstate->current_state = curstate->current_state + 1;
+            curstate->last_stack_num = cons;
+          }
+        else
           {
             print_unichar(cons_subjoined[cons]);
             curstate->current_state = S_WAIT_END;
-            curstate->nb_cons = curstate->nb_cons + 1;
-          }
-        else
-          {
-            switch(curstate->last_cons_num)
-              {
-                case c_r:
-                  if (right_combine_r[cons] == 1)
-                    {
-                      print_unichar(cons_subjoined[cons]);
-                      curstate->current_state = S_WAIT_END;
-                      curstate->nb_cons = curstate->nb_cons + 1;
-                    }
-                  elsereinit();
-                  break;
-                case c_l:
-                  if (right_combine_l[cons] == 1)
-                    {
-                      print_unichar(cons_subjoined[cons]);
-                      curstate->current_state = S_WAIT_END;
-                      curstate->nb_cons = curstate->nb_cons + 1;
-                    }
-                  elsereinit();
-                  break;
-                case c_s:
-                  if (right_combine_s[cons] == 1)
-                    {
-                      print_unichar(cons_subjoined[cons]);
-                      curstate->current_state = S_WAIT_END;
-                      curstate->nb_cons = curstate->nb_cons + 1;
-                    }
-                  elsereinit();
-                  break;
-                default:
-                  switch(cons)
-                  {
-                    case c_r:
-                      if (left_combine_r[curstate->last_cons_num] == 1 && curstate->nb_cons < 3)
-                        {
-                          print_unichar(cons_subjoined[cons]);
-                          curstate->nb_cons = curstate->nb_cons + 1;
-                        }
-                      elsereinit();
-                      break;
-                    case c_l:
-                      if (left_combine_l[curstate->last_cons_num] == 1 && curstate->nb_cons < 3)
-                        {
-                          print_unichar(cons_subjoined[cons]);
-                          curstate->nb_cons = curstate->nb_cons + 1;
-                        }
-                      elsereinit();
-                      break;
-                    case c_w:
-                      if (left_combine_w[curstate->last_cons_num] == 1 && curstate->nb_cons < 3)
-                        {
-                          print_unichar(cons_subjoined[cons]);
-                          curstate->nb_cons = curstate->nb_cons + 1;
-                        }
-                      elsereinit();
-                      break;
-                    case c_y:
-                      printf("%d\n", left_combine_y[curstate->last_cons_num]);
-                      if (left_combine_y[curstate->last_cons_num] == 1 && curstate->nb_cons < 3)
-                        {
-                          print_unichar(cons_subjoined[cons]);
-                          curstate->nb_cons = curstate->nb_cons + 1;
-                        }
-                      elsereinit();
-                      break;
-                    default:
-                      _reinitialize()
-                      print_unichar(cons_initial[cons]);
-                      curstate->nb_cons = curstate->nb_cons + 1;
-                      curstate->current_state = S_WAIT_CONS;
-                      
-                  }
-              }
+            curstate->last_stack_num = newstack;
           }
         break;
       default:
-        // S_WAIT_END, quite similar
+      //case S_END:
         if (curstate->last_is_plus == 1)
           {
             print_unichar(cons_subjoined[cons]);
-            curstate->nb_cons = curstate->nb_cons + 1;
+            curstate->last_stack_num = NON_STANDARD_STACK;
           }
         else
           {
-            switch(cons)
-              {
-                case c_r:
-                  if (left_combine_r[curstate->last_cons_num] == 1 && curstate->nb_cons < 3)
-                    {
-                      print_unichar(cons_subjoined[cons]);
-                      curstate->nb_cons = curstate->nb_cons + 1;
-                    }
-                  elsereinit();
-                  break;
-                case c_l:
-                  if (left_combine_l[curstate->last_cons_num] == 1 && curstate->nb_cons < 3)
-                    {
-                      print_unichar(cons_subjoined[cons]);
-                      curstate->nb_cons = curstate->nb_cons + 1;
-                    }
-                  elsereinit();
-                  break;
-                case c_w:
-                  if (left_combine_w[curstate->last_cons_num] == 1 && curstate->nb_cons < 3)
-                    {
-                      print_unichar(cons_subjoined[cons]);
-                      curstate->nb_cons = curstate->nb_cons + 1;
-                    }
-                  elsereinit();
-                  break;
-                case c_y:
-                  if (left_combine_y[curstate->last_cons_num] == 1 && curstate->nb_cons < 3)
-                    {
-                      print_unichar(cons_subjoined[cons]);
-                      curstate->nb_cons = curstate->nb_cons + 1;
-                    }
-                  elsereinit();
-                  break;
-                default:
-                  _reinitialize()
-                  print_unichar(cons_initial[cons]);
-                  curstate->nb_cons = curstate->nb_cons + 1;
-                  curstate->current_state = S_WAIT_CONS;
-                  
-              }
+            _reinitialize();
+            print_unichar(cons_initial[cons]);
+            curstate->current_state = curstate->current_state + 1;
+            curstate->last_stack_num = cons;
           }
         break;
     }
-  curstate->last_cons_num = cons;
   curstate->last_is_plus = 0;
 }
 
@@ -264,7 +204,6 @@ ewts_add_vowel(unsigned char vow, ewts_state *curstate)
   if (curstate->current_state == S_WAIT_CONS && vow == v_a && curstate->last_is_plus == 1)
     {
       print_unichar(cons_subjoined[c_none]);
-      curstate->nb_cons = curstate->nb_cons + 1;
       return;
     }
   if (curstate->last_is_plus == 1 || curstate->nb_vow == 0)
@@ -441,8 +380,7 @@ ewts_state *new_state()
   s->utfbufindex = 0;
   s->last_is_plus = 0;
   s->current_state = S_INITIAL;
-  s-> last_cons_num = 0;
-  s-> nb_cons = 0;
+  s-> last_stack_num = 0;
   s->nb_vow = 0;
   return s;
 }
@@ -461,6 +399,9 @@ char* ewts_scanner(const char *argstr)
     curstate->utfbuf[curstate->utfbufindex] = 0;
     return curstate->utfbuf;
 }
+
+#if ENABLE_LUA == 1
+// Lua bindings
 
 // quite useful template if you whish to integrate a lib into LuaTeX.
 static int lua_ewts_scanner(lua_State *L)
@@ -489,4 +430,4 @@ int _EXPORT luaopen_LuaEWTS_lib (lua_State* L) {
         luaL_register(L, "ewts", funcs);
         return 1;
 }
-
+#endif

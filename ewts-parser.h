@@ -37,14 +37,17 @@ http://wiki.creativecommons.org/CC0
 // the public function
 char* ewts_scanner(const char *argstr);
 
+// two useful defs
+#define NON_STANDARD_STACK 0
+#define NON_COMBINABLE_STACK 1
+
 // the state struct
 typedef struct ewts_state {
   char *utfbuf;
   int utfbufindex;
   unsigned char last_is_plus;
   unsigned char current_state;
-  unsigned char last_cons_num;
-  unsigned char nb_cons;
+  unsigned char last_stack_num;
   unsigned char nb_vow;
 } ewts_state;
 
@@ -100,6 +103,27 @@ typedef struct ewts_state {
 // the number of consonants (we fill 0 with 0 in order to align everything)
 #define c_nb 48
 
+// the stacks that can be combined
+#define s_rk 48
+#define s_rg 49
+#define s_rm 50
+#define s_sm 51
+#define s_sk 52
+#define s_sg 53
+#define s_sp 54
+#define s_sb 55
+#define s_sn 56
+#define s_rts 57
+#define s_gr 58
+#define s_dr 59
+#define s_phy 60
+
+// the number of stacks that can be combined
+#define s_nb 13
+
+// the number of consonnants + stacks
+#define sc_nb 61
+
 // vowels
 #define v_a 1
 #define v_i 2
@@ -128,6 +152,7 @@ typedef uint32_t pwchar;
 #define S_INITIAL 1
 #define S_WAIT_CONS 2
 #define S_WAIT_END 3
+#define S_END 4
 
 static pwchar vowelchars[c_nb] = {0,
 // v_a
@@ -165,8 +190,8 @@ static pwchar vowelchars[c_nb] = {0,
 };
 
 static char right_combine_r[c_nb] = {0, 
-    1, 0, 1, 1, 0, 0, 1, 1, 1, 0, 
-    1, 1, 0, 0, 1, 1, 1, 0, 1, 0,
+    s_rk, 0, s_rg, 1, 0, 0, 1, 1, 1, 0, 
+    1, 1, 0, 0, 1, s_rm, s_rts, 0, 1, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0};
@@ -179,39 +204,43 @@ static char right_combine_l[c_nb] = {0,
     0, 0, 0, 0, 0, 0, 0};
     
 static char right_combine_s[c_nb] = {0, 
-    1, 0, 1, 1, 0, 0, 0, 1, 1, 0, 
-    1, 1, 1, 0, 1, 1, 1, 0, 0, 0,
+    s_sk, 0, s_sg, 1, 0, 0, 0, 1, 1, 0, 
+    1, s_sn, s_sp, 0, s_sb, 1, s_sm, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0};
-    
-static char left_combine_y[c_nb] = {0, 
+
+static char left_combine_y[sc_nb] = {0, 
     1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 
-    0, 0, 1, 1, 1, 1, 0, 0, 0, 0,
+    0, 0, 1, s_phy, 1, 1, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0};
+    0, 0, 0, 0, 0, 0, 0, 1, 1, 1,
+    1, 1, 1, 1, 1, 0, 0, 0, 0, 0};
     
-static char left_combine_r[c_nb] = {0, 
-    1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 
-    1, 1, 1, 1, 1, 1, 0, 0, 0, 1,
+static char left_combine_r[sc_nb] = {0, 
+    1, 1, s_gr, 0, 0, 0, 0, 0, 1, 1, 
+    s_dr, 0, 1, 1, 1, 1, 0, 0, 0, 1,
     0, 0, 0, 0, 0, 1, 1, 1, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0};
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    1, 1, 1, 1, 1, 1, 0, 0, 0, 0};
     
-static char left_combine_l[c_nb] = {0, 
+static char left_combine_l[sc_nb] = {0, 
     1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 
     0, 0, 0, 0, 1, 0, 0, 0, 0, 0,
     0, 1, 0, 1, 0, 0, 1, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0};
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
     
-static char left_combine_w[c_nb] = {0, 
+static char left_combine_w[sc_nb] = {0, 
     1, 1, 1, 0, 1, 0, 0, 1, 1, 0, 
     1, 0, 0, 0, 0, 0, 1, 1, 0, 0,
     1, 1, 0, 1, 1, 1, 1, 1, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0};
+    0, 0, 0, 0, 0, 0, 0, 0, 1, 0,
+    0, 0, 0, 0, 0, 0, 1, 1, 1, 1};
 
 static pwchar cons_initial[c_nb] = {0,
 // c_k
