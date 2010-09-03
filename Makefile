@@ -9,8 +9,13 @@ endif
 # generic platform specific rules:
 ifeq ($(ARCH),Linux)
   POUET = $(shell echo prout)
-  LUACFLAGS = $(shell pkg-config --cflags lua)
-  LUALIBS   = $(shell pkg-config --libs lua)
+  ifeq ($(LINUXARCH),Debian)
+    LUACFLAGS = $(shell pkg-config --cflags lua5.1)
+    LUALIBS   = $(shell pkg-config --libs lua5.1)
+  else
+    LUACFLAGS = $(shell pkg-config --cflags lua)
+    LUALIBS   = $(shell pkg-config --libs lua)
+  endif
   CFLAGS = -fPIC -O2 -c $(LUACFLAGS) -DENABLE_LUA
   SHLIBSUFFIX = .so
   LINKFLAGS = -shared -Wl,-no-undefined,-soname=LuaEWTS_lib$(SHLIBSUFFIX) $(LUALIBS)
@@ -19,28 +24,22 @@ else
     CFLAGS = -O2 -c
     SHLIBSUFFIX = .so
     LINKFLAGS = -bundle -L/usr/local/lib) -llua
-  else  # debian has strange lua rules
-    ifeq ($(ARCH),Debian)
-      LUACFLAGS = $(shell pkg-config --cflags lua5.1)
-      LUALIBS   = $(shell pkg-config --libs lua5.1)
-      CFLAGS = -fPIC -O2 -c $(LUACFLAGS) -DENABLE_LUA
-      SHLIBSUFFIX = .so
-      LINKFLAGS = -shared -Wl,-no-undefined,-soname=LuaEWTS_lib$(SHLIBSUFFIX) $(LUALIBS)
-    else # mingw
-      CC = $(ARCH)-gcc
-      LD = $(ARCH)-ld
-      ifeq ($(LINUXARCH),Debian)
-        CFLAGS = $(shell pkg-config --cflags lua5.1) -02 -c -DENABLE_LUA
-      else
-        CFLAGS = $(shell pkg-config --cflags lua) -02 -c -DENABLE_LUA
-      endif
-      SHLIBSUFFIX = .dll
-      LINKFLAGS = -shared -mconsole -s -Wl,-no-undefined,-soname=LuaEWTS_lib$(SHLIBSUFFIX) -L. -llua51
+  else  # mingw
+    CC = $(ARCH)-gcc
+    LD = $(ARCH)-ld
+    ifeq ($(LINUXARCH),Debian)
+      CFLAGS = $(shell pkg-config --cflags lua5.1) -02 -c -DENABLE_LUA
+    else
+      CFLAGS = $(shell pkg-config --cflags lua) -02 -c -DENABLE_LUA
     endif
+    SHLIBSUFFIX = .dll
+    LINKFLAGS = -shared -mconsole -s -Wl,-no-undefined,-soname=LuaEWTS_lib$(SHLIBSUFFIX) -L. -llua51
   endif
 endif
 
-all:  LuaEWTS_lib$(SHLIBSUFFIX) perl
+all: lua perl
+
+lua: LuaEWTS_lib$(SHLIBSUFFIX)
 
 perl: ewts-parser.o ewts_wrap.c
 	$(CC) -c ewts-parser.c ewts_wrap.c `perl -MExtUtils::Embed -e ccopts`

@@ -27,16 +27,16 @@ done
 
 ARCH=`uname -s`
 
+LINUXARCH=Linux
+
 # here we need to detect Debian, as they don't have the lua library but the
 # lua5.1 library instead.
 if [ "$ARCH" = "Linux" ]
 then
   if [ -d /usr/include/lua5.1/ ]; then
-    ARCH="Debian"
+    LINUXARCH="Debian"
   fi
 fi
-
-LINUXARCH=$ARCH
 
 if [ "$MINGWCROSS" = "TRUE" ]
 then
