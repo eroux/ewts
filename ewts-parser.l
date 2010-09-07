@@ -292,6 +292,7 @@ ewts_add_verb(char *str, ewts_state *curstate)
 <verb>[^\]]+ { add_verb(strdup(ewts_text)); }
 <verb>\]     { BEGIN(INITIAL); }
 \\u[0-9a-fA-F]{3,4}     { add_uni(ewts_text+2); }
+\\[^u]     { add_other(ewts_text[1]); }
 \+a     { plus_sign(); add_cons(c_none); }
 k     { add_cons(c_k); }
 c     { add_cons(c_c); }
