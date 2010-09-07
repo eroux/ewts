@@ -54,9 +54,24 @@ void
 ewts_print_unichar (pwchar to_print, ewts_state *curstate)
 {
   char *buf = curstate->utfbuf + curstate->utfbufindex;
-  if (!to_print)
+  if (to_print < 3)
     {
-      return;
+      if (!to_print)
+        {
+          return;
+        }
+      if (to_print == 1)
+        {
+          ewts_print_unichar (0xF55, curstate);
+          ewts_print_unichar (0xF39, curstate);
+          return;
+        }
+      if (to_print == 2)
+        {
+          ewts_print_unichar (0xF56, curstate);
+          ewts_print_unichar (0xF39, curstate);
+          return;
+        }
     }
   if (to_print <= 0x7F)
     {
@@ -102,8 +117,8 @@ ewts_print_unichar (pwchar to_print, ewts_state *curstate)
 
 // a function that returns the result of the combination of consone and constwo
 // result is NON_STANDARD_STACK, NON_COMBINABLE_STACK or the standard combinable stack number
-unsigned char
 // consone can be also a stack
+unsigned char
 ewts_combine(unsigned char consone, unsigned char constwo)
 {
   switch(consone)
@@ -151,9 +166,18 @@ ewts_add_cons(unsigned char cons, ewts_state *curstate)
   switch(curstate->current_state)
     {
       case S_INITIAL:
-        print_unichar(cons_initial[cons]);
-        curstate->current_state = S_WAIT_CONS;
-        curstate->last_stack_num = cons;
+        if (curstate->last_is_plus == 1) // case of \u0F88+k, not sure about the side effects though...
+          {
+            print_unichar(cons_subjoined[cons]);
+            curstate->current_state = S_WAIT_END;
+            curstate->last_stack_num = NON_STANDARD_STACK;
+          }
+        else
+          {
+            print_unichar(cons_initial[cons]);
+            curstate->current_state = S_WAIT_CONS;
+            curstate->last_stack_num = cons;
+          }
         break;
       case S_WAIT_CONS:
       case S_WAIT_END:
@@ -266,6 +290,8 @@ ewts_add_verb(char *str, ewts_state *curstate)
 
 #define add_uni(str) ewts_add_other(strtol(str, NULL, 16), curstate);
 
+#define add_uni_dec(str) ewts_add_other(strtol(str, NULL, 10), curstate);
+
 #define add_other(num) ewts_add_other(num, curstate)
 
 %}
@@ -291,7 +317,8 @@ ewts_add_verb(char *str, ewts_state *curstate)
 \[    { BEGIN(verb); }
 <verb>[^\]]+ { add_verb(strdup(ewts_text)); }
 <verb>\]     { BEGIN(INITIAL); }
-\\u[0-9a-fA-F]{3,4}     { add_uni(ewts_text+2); }
+\\u[0-9a-fA-F]{1,4}     { add_uni(ewts_text+2); }
+\\U[0-9]{1,8}     { add_uni_dec(ewts_text+2); }
 \\[^u]     { add_other(ewts_text[1]); }
 \+a     { plus_sign(); add_cons(c_none); }
 k     { add_cons(c_k); }
