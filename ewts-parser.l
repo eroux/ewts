@@ -23,7 +23,7 @@ http://wiki.creativecommons.org/CC0
 #include <stdlib.h>
 #include "ewts-parser.h"
 #ifndef ENABLE_LUA
-#define ENABLE_NLS 0
+#define ENABLE_LUA 0
 #endif
 #if ENABLE_LUA == 1
 #include "lua.h"
@@ -195,7 +195,7 @@ void
 ewts_add_vowel(unsigned char vow, ewts_state *curstate)
 {
   if (curstate->current_state == S_INITIAL)
-    {
+    {;
       print_unichar(cons_initial[c_none]);
       print_unichar(vowelchars[vow]);
       curstate->nb_vow = curstate->nb_vow + 1;
@@ -204,6 +204,7 @@ ewts_add_vowel(unsigned char vow, ewts_state *curstate)
   if (curstate->current_state == S_WAIT_CONS && vow == v_a && curstate->last_is_plus == 1)
     {
       print_unichar(cons_subjoined[c_none]);
+      curstate->current_state = S_WAIT_END;
       return;
     }
   if (curstate->last_is_plus == 1 || curstate->nb_vow == 0)
@@ -218,6 +219,20 @@ ewts_add_vowel(unsigned char vow, ewts_state *curstate)
       print_unichar(vowelchars[vow]);
     }
   curstate->last_is_plus = 0;
+}
+
+void 
+ewts_add_ambiguous(unsigned char one_vow, unsigned char two_cons, unsigned char two_vow, ewts_state *curstate)
+{
+  if (curstate->current_state == S_INITIAL || curstate->last_is_plus)
+    {
+      ewts_add_cons(two_cons, curstate);
+      ewts_add_vowel(two_vow, curstate);
+    }
+  else
+    {
+      ewts_add_vowel(one_vow, curstate);
+    }
 }
 
 void
@@ -238,6 +253,8 @@ ewts_add_verb(char *str, ewts_state *curstate)
 #define add_cons(num) ewts_add_cons(num, curstate);
 
 #define add_vowel(num) ewts_add_vowel(num, curstate);
+
+#define add_ambiguous(num, numtwo, numthree) ewts_add_ambiguous(num, numtwo, numthree, curstate);
 
 #define add_verb(str) ewts_add_verb(str, curstate);
 
@@ -327,16 +344,16 @@ i     { add_vowel(v_i); }
 u     { add_vowel(v_u); }
 e     { add_vowel(v_e); }
 o     { add_vowel(v_o); }
-r-i   { add_vowel(v_ri); }
-l-i   { add_vowel(v_li); }
+r-i   { add_ambiguous(v_ri, c_r, v_mini); }
+l-i   { add_ambiguous(v_li, c_l, v_mini); }
 -i    { add_vowel(v_mini); }
 A     { add_vowel(v_A); }
 I     { add_vowel(v_I); }
 U     { add_vowel(v_U); }
 ai    { add_vowel(v_ai); }
 au    { add_vowel(v_au); }
-r-I   { add_vowel(v_rI); }
-l-I   { add_vowel(v_lI); }
+r-I   { add_ambiguous(v_rI, c_r, v_minI); }
+l-I   { add_ambiguous(v_lI, c_l, v_minI); }
 -I    { add_vowel(v_minI); }
 [0-9] { add_num(ewts_text[0]-48); }
 \/    { add_other(0xf0d); }
@@ -393,7 +410,7 @@ char* ewts_scanner(const char *argstr)
     len = strlen(argstr);
     curstate->utfbuf = (char *) malloc((len*4+1)*sizeof(char));
     ybuf=yy_scan_string(argstr);
-    yylex(curstate);
+    ewts_lex(curstate);
     yy_flush_buffer(ybuf);
     yy_delete_buffer(ybuf);
     curstate->utfbuf[curstate->utfbufindex] = 0;
