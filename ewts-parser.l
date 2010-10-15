@@ -104,17 +104,6 @@ ewts_print_unichar (pwchar to_print, ewts_state *curstate)
 
 #define print_unichar(char) ewts_print_unichar(char, curstate);
 
-// helper
-#define elsereinit() \
-    else \
-      {\
-         _reinitialize()\
-         print_unichar(cons_initial[cons]);\
-         curstate->current_state = S_WAIT_CONS;\
-         curstate->nb_cons = curstate->nb_cons + 1;\
-      }
-
-
 // a function that returns the result of the combination of consone and constwo
 // result is NON_STANDARD_STACK, NON_COMBINABLE_STACK or the standard combinable stack number
 // consone can be also a stack
@@ -169,7 +158,7 @@ ewts_add_cons(unsigned char cons, ewts_state *curstate)
         if (curstate->last_is_plus == 1) // case of \u0F88+k, not sure about the side effects though...
           {
             print_unichar(cons_subjoined[cons]);
-            curstate->current_state = S_WAIT_END;
+            curstate->current_state = S_WAIT_CONS;
             curstate->last_stack_num = NON_STANDARD_STACK;
           }
         else
@@ -180,20 +169,39 @@ ewts_add_cons(unsigned char cons, ewts_state *curstate)
           }
         break;
       case S_WAIT_CONS:
-      case S_WAIT_END:
         newstack = ewts_combine(curstate->last_stack_num, cons);
-        if (newstack == NON_STANDARD_STACK && curstate->last_is_plus == 0)
+        if (suffix[curstate->last_stack_num] == 1 && curstate->syllable_state == S_END && curstate->last_is_plus == 0)
           {
             _reinitialize();
             print_unichar(cons_initial[cons]);
-            curstate->current_state = curstate->current_state + 1;
+            curstate->current_state = S_WAIT_CONS;
             curstate->last_stack_num = cons;
           }
-        else
+        else 
           {
-            print_unichar(cons_subjoined[cons]);
-            curstate->current_state = S_WAIT_END;
-            curstate->last_stack_num = newstack;
+            if (newstack == NON_STANDARD_STACK && curstate->last_is_plus == 0)
+              {
+                if ((prefix[curstate->last_stack_num] == 1 && curstate->syllable_state == S_INITIAL) || curstate->syllable_state == S_END)
+                  {
+                    _reinitialize();
+                    print_unichar(cons_initial[cons]);
+                    curstate->current_state = S_WAIT_CONS;
+                    curstate->last_stack_num = cons;
+                  }
+                else
+                  {
+                    print_unichar(cons_subjoined[cons]);
+                    curstate->current_state = S_END;
+                    curstate->last_stack_num = newstack;
+                    curstate->syllable_state = S_END;
+                  }
+              }
+            else
+              {
+                print_unichar(cons_subjoined[cons]);
+                curstate->last_stack_num = newstack;
+                curstate->syllable_state = S_END;
+              }
           }
         break;
       default:
@@ -218,20 +226,7 @@ ewts_add_cons(unsigned char cons, ewts_state *curstate)
 void
 ewts_add_vowel(unsigned char vow, ewts_state *curstate)
 {
-  if (curstate->current_state == S_INITIAL)
-    {;
-      print_unichar(cons_initial[c_none]);
-      print_unichar(vowelchars[vow]);
-      curstate->nb_vow = curstate->nb_vow + 1;
-      return;
-    }
-  if (curstate->current_state == S_WAIT_CONS && vow == v_a && curstate->last_is_plus == 1)
-    {
-      print_unichar(cons_subjoined[c_none]);
-      curstate->current_state = S_WAIT_END;
-      return;
-    }
-  if (curstate->last_is_plus == 1 || curstate->nb_vow == 0)
+  if (curstate->last_is_plus == 1 || (curstate->nb_vow == 0 && curstate->current_state != S_INITIAL))
     {
       print_unichar(vowelchars[vow]);
       curstate->nb_vow = curstate->nb_vow + 1;
@@ -241,14 +236,18 @@ ewts_add_vowel(unsigned char vow, ewts_state *curstate)
       _reinitialize();
       print_unichar(cons_initial[c_none]);
       print_unichar(vowelchars[vow]);
+      if (vow != v_a) {
+        curstate->nb_vow = 1;
+      }
     }
   curstate->last_is_plus = 0;
+  curstate->syllable_state = S_END;
 }
 
 void 
 ewts_add_ambiguous(unsigned char one_vow, unsigned char two_cons, unsigned char two_vow, ewts_state *curstate)
 {
-  if (curstate->current_state == S_INITIAL || curstate->last_is_plus)
+  if ((curstate->syllable_state == S_INITIAL && curstate->current_state == S_INITIAL) || (curstate->last_is_plus && curstate->nb_vow == 0))
     {
       ewts_add_cons(two_cons, curstate);
       ewts_add_vowel(two_vow, curstate);
@@ -263,6 +262,7 @@ void
 ewts_add_other(pwchar num, ewts_state *curstate)
 {
   _reinitialize();
+  curstate->syllable_state = S_INITIAL;
   print_unichar(num);
 }
 
@@ -314,12 +314,15 @@ ewts_add_verb(char *str, ewts_state *curstate)
 %x verb
 
 %%
+(\n|\r|\t) {
+  add_other(ewts_text[0]);
+}
 \[    { BEGIN(verb); }
 <verb>[^\]]+ { add_verb(strdup(ewts_text)); }
 <verb>\]     { BEGIN(INITIAL); }
 \\u[0-9a-fA-F]{1,4}     { add_uni(ewts_text+2); }
 \\U[0-9]{1,8}     { add_uni_dec(ewts_text+2); }
-\\[^u]     { add_other(ewts_text[1]); }
+\\[^uU]     { add_other(ewts_text[1]); }
 \+a     { plus_sign(); add_cons(c_none); }
 k     { add_cons(c_k); }
 c     { add_cons(c_c); }
@@ -425,6 +428,7 @@ ewts_state *new_state()
   s->utfbufindex = 0;
   s->last_is_plus = 0;
   s->current_state = S_INITIAL;
+  s->syllable_state = S_INITIAL;
   s-> last_stack_num = 0;
   s->nb_vow = 0;
   return s;
