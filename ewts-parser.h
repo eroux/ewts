@@ -33,6 +33,7 @@ typedef struct ewts_state {
   unsigned char last_is_plus;
   unsigned char current_state;
   unsigned char last_stack_num;
+  unsigned char syllable_state;
   unsigned char nb_vow;
 } ewts_state;
 
@@ -40,8 +41,7 @@ typedef struct ewts_state {
 // the different states
 #define S_INITIAL 1
 #define S_WAIT_CONS 2
-#define S_WAIT_END 3
-#define S_END 4
+#define S_END 3
 
 static pwchar vowelchars[v_nb] = {0,
 // v_a
@@ -168,9 +168,9 @@ L'ཀྵ',
 // c_v
 2,
 // c_W
-0,
+L'ཝ',
 // c_Y
-0,
+L'ཡ',
 // c_OM
 L'ༀ',
 };

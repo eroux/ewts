@@ -234,7 +234,7 @@ ewts_add_vowel(unsigned char vow, ewts_state *curstate)
   else
     {
       _reinitialize();
-      print_unichar(cons_initial[c_none]);
+      //print_unichar(cons_initial[c_none]);
       print_unichar(vowelchars[vow]);
       if (vow != v_a) {
         curstate->nb_vow = 1;
