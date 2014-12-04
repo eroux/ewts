@@ -52,5 +52,10 @@ ewts-parser.o:  ewts-parser.c ewts-parser.h
 ewts-parser.c: ewts-parser.l
 	flex ewts-parser.l
 
+python: ewts$(SHLIBSUFFIX)
+
+ewts$(SHLIBSUFFIX): ewts-parser.o
+	$(CC) -shared -s -Wl,-no-undefined,-soname=ewts$(SHLIBSUFFIX) ewts-parser.o -o ewts$(SHLIBSUFFIX) $(LINKFLAGS) 
+
 clean:
 	@rm -f ewts-parser.c ewts-parser.o LuaEWTS_lib.dll LuaEWTS_lib.so ewts_wrap.c ewts.pm ewts_wrap.o ewts.so

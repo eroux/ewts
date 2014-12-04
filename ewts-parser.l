@@ -476,7 +476,7 @@ int _EXPORT luaopen_LuaEWTS_lib (lua_State* L) {
                 {"translate", lua_ewts_scanner},
                 {NULL, NULL}
         };
-        luaL_register(L, "ewts", funcs);
+        luaL_setfuncs(L, funcs, 0);
         return 1;
 }
 #endif
