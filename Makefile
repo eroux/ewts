@@ -9,13 +9,8 @@ endif
 # generic platform specific rules:
 ifeq ($(ARCH),Linux)
   POUET = $(shell echo prout)
-  ifeq ($(LINUXARCH),Debian)
-    LUACFLAGS = $(shell pkg-config --cflags lua5.1)
-    LUALIBS   = $(shell pkg-config --libs lua5.1)
-  else
-    LUACFLAGS = $(shell pkg-config --cflags lua)
-    LUALIBS   = $(shell pkg-config --libs lua)
-  endif
+  LUACFLAGS = $(shell pkg-config --cflags lua5.2)
+  LUALIBS   = $(shell pkg-config --libs lua5.2)
   CFLAGS = -fPIC -O2 -c $(LUACFLAGS) -DENABLE_LUA
   SHLIBSUFFIX = .so
   LINKFLAGS = -shared -Wl,-no-undefined,-soname=LuaEWTS_lib$(SHLIBSUFFIX) $(LUALIBS)
@@ -42,7 +37,7 @@ all: lua perl
 lua: LuaEWTS_lib$(SHLIBSUFFIX)
 
 perl: ewts-parser.o ewts_wrap.c
-	$(CC) -c ewts-parser.c ewts_wrap.c `perl -MExtUtils::Embed -e ccopts`
+	$(CC) -c ewts-parser.c ewts_wrap.c -fPIC `perl -MExtUtils::Embed -e ccopts`
 	ld -G ewts-parser.o ewts_wrap.o -o ewts.so
 
 ewts_wrap.c: ewts.i

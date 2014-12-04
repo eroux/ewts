@@ -43,6 +43,31 @@ typedef struct ewts_state {
 #define S_WAIT_CONS 2
 #define S_END 3
 
+// the prefixes: g, d, b, m and '
+static char prefix[c_nb] = {0, 
+    0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 
+    1, 0, 0, 0, 1, 1, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 1, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0};
+
+
+// the suffixes: g ng d n b m r l s N T
+static char suffix[c_nb] = {0, 
+    0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 
+    1, 1, 0, 0, 1, 1, 0, 0, 0, 0,
+    0, 0, 0, 1, 1, 0, 1, 0, 0, 0,
+    0, 0, 0, 1, 0, 1, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0};
+
+// the post_suffixes: s and d
+static char post_suffix[c_nb] = {0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 1, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 1, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0};
+
 static pwchar vowelchars[v_nb] = {0,
 // v_a
 0,
