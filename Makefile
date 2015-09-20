@@ -19,7 +19,7 @@ else
   else  # mingw
     CC = $(ARCH)-gcc
     LD = $(ARCH)-ld
-    CFLAGS = -02 -c
+    CFLAGS = -O2 -c
     SHLIBSUFFIX = .dll
     LINKFLAGS = -shared -mconsole -s -Wl,-no-undefined,-soname=ewts$(SHLIBSUFFIX) -L.
   endif
@@ -34,7 +34,7 @@ ewts-parser.c: ewts-parser.l
 	flex ewts-parser.l
 
 ewts$(SHLIBSUFFIX): ewts-parser.o
-	$(CC) -shared -s -Wl,-no-undefined,-soname=ewts$(SHLIBSUFFIX) ewts-parser.o -o ewts$(SHLIBSUFFIX) $(LINKFLAGS) 
+	$(CC) $(LINKFLAGS) ewts-parser.o -o ewts$(SHLIBSUFFIX)
 
 clean:
 	@rm -f ewts-parser.c ewts-parser.o ewts.so
