@@ -4,9 +4,6 @@
 Tewts parser for the luaewts library.
 Copyright (C) 2010 Elie Roux <elie.roux@telecom-bretagne.eu>
 
-luaewts library loading file.
-Copyright 2010 Elie Roux <elie.roux@telecom-bretagne.eu>
-
 This file is under the Creative Commons CC0 license.
 
 See the full text at
@@ -22,14 +19,6 @@ http://wiki.creativecommons.org/CC0
 #include <stdio.h>
 #include <stdlib.h>
 #include "ewts-parser.h"
-#ifndef ENABLE_LUA
-#define ENABLE_LUA 0
-#endif
-#if ENABLE_LUA == 1
-#include "lua.h"
-#include "lauxlib.h"
-#include "lualib.h"
-#endif
 
 
 // we redeclare yylex to pass an argument to it
@@ -234,7 +223,7 @@ ewts_add_vowel(unsigned char vow, ewts_state *curstate)
   else
     {
       _reinitialize();
-      //print_unichar(cons_initial[c_none]);
+      print_unichar(cons_initial[c_none]);
       print_unichar(vowelchars[vow]);
       if (vow != v_a) {
         curstate->nb_vow = 1;
