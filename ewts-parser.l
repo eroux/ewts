@@ -448,35 +448,3 @@ char* ewts_scanner(const char *argstr)
     curstate->utfbuf[curstate->utfbufindex] = 0;
     return curstate->utfbuf;
 }
-
-#if ENABLE_LUA == 1
-// Lua bindings
-
-// quite useful template if you whish to integrate a lib into LuaTeX.
-static int lua_ewts_scanner(lua_State *L)
-{
-    const char *argstr;
-    char *res;
-    if (!lua_isstring(L, 1))
-      {
-        lua_pushnil(L);
-        lua_pushstring(L, "incorrect argument, string expected");
-        lua_error(L);
-        return 0;
-      }
-    argstr = luaL_checklstring(L, 1, NULL);
-    res = ewts_scanner(argstr);
-    lua_pushstring(L, res);
-    free(res);
-    return 1;
-}
-
-int _EXPORT luaopen_LuaEWTS_lib (lua_State* L) {
-        static const struct luaL_Reg funcs[] = {
-                {"translate", lua_ewts_scanner},
-                {NULL, NULL}
-        };
-        luaL_setfuncs(L, funcs, 0);
-        return 1;
-}
-#endif

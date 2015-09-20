@@ -29,15 +29,6 @@ ARCH=`uname -s`
 
 LINUXARCH=Linux
 
-# here we need to detect Debian, as they don't have the lua library but the
-# lua5.1 library instead.
-if [ "$ARCH" = "Linux" ]
-then
-  if [ -d /usr/include/lua5.1/ ]; then
-    LINUXARCH="Debian"
-  fi
-fi
-
 if [ "$MINGWCROSS" = "TRUE" ]
 then
   MINGWBUILD=$HOSTTYPE-$OSTYPE
