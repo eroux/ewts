@@ -4,7 +4,7 @@ This repository contains the code of a minimal [ewts](http://www.thlib.org/refer
 
     char* ewts_scanner(const char *argstr)
 
-it is designed to be super-efficient and easily useable in any language. You can bind it to your favorite language with [swig](http://www.swig.org/) with the [ewts.i](ewts.i) file, or use it directly from python following the [test.py](test.py) example.
+it is designed to be super-efficient and easily useable in any language. You can bind it to your favorite language with [swig](http://www.swig.org/) with the [ewts.i](ewts.i) file, or use it directly from python following the [example.py](example.py) example.
 
 ## Dependencies
 
