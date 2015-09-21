@@ -13,7 +13,10 @@ else:
 ewts_scan = ewts.ewts_scanner
 ewts_scan.restype = c_char_p
 
-tabl = ["/", "i", "u", "u", "u", "h+r", "o"]
+def ewts_to_unicode(ewts_str):
+    return ewts_scan(ewts_str.encode(encoding='UTF-8')).decode(encoding='UTF-8')
+
+tabl = ["brgyud"]
 
 for t in tabl:
-    print('"'+ewts_scan(t)+'", ')
+    print(ewts_to_unicode(t))

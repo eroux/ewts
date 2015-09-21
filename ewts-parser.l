@@ -309,10 +309,23 @@ ewts_add_verb(char *str, ewts_state *curstate)
 \[    { BEGIN(verb); }
 <verb>[^\]]+ { add_verb(strdup(ewts_text)); }
 <verb>\]     { BEGIN(INITIAL); }
-\\u[0-9a-fA-F]{1,4}     { add_uni(ewts_text+2); }
-\\U[0-9]{1,8}     { add_uni_dec(ewts_text+2); }
-\\[^uU]     { add_other(ewts_text[1]); }
-\+a     { plus_sign(); add_cons(c_none); }
+\\u[0-9a-fA-F]{1,4}  { add_uni(ewts_text+2); }
+\\U[0-9]{1,8}        { add_uni_dec(ewts_text+2); }
+\\[^uU]               { add_other(ewts_text[1]); }
+\+a   { plus_sign(); add_cons(c_none); }
+brk   { add_cons(c_b);dot_sign();add_cons(c_r);add_cons(c_k); }
+brg   { add_cons(c_b);dot_sign();add_cons(c_r);add_cons(c_g); }
+brng  { add_cons(c_b);dot_sign();add_cons(c_r);add_cons(c_ng); }
+brj   { add_cons(c_b);dot_sign();add_cons(c_r);add_cons(c_j); }
+brl   { add_cons(c_b);dot_sign();add_cons(c_r);add_cons(c_l); }
+brny  { add_cons(c_b);dot_sign();add_cons(c_r);add_cons(c_ny); }
+brt   { add_cons(c_b);dot_sign();add_cons(c_r);add_cons(c_t); }
+brd   { add_cons(c_b);dot_sign();add_cons(c_r);add_cons(c_d); }
+brn   { add_cons(c_b);dot_sign();add_cons(c_r);add_cons(c_n); }
+brts  { add_cons(c_b);dot_sign();add_cons(c_r);add_cons(c_ts); }
+brdz  { add_cons(c_b);dot_sign();add_cons(c_r);add_cons(c_dz); }
+blt   { add_cons(c_b);dot_sign();add_cons(c_l);add_cons(c_t); }
+bld   { add_cons(c_b);dot_sign();add_cons(c_l);add_cons(c_d); }
 k     { add_cons(c_k); }
 c     { add_cons(c_c); }
 kh    { add_cons(c_kh); }

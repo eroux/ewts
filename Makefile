@@ -27,7 +27,7 @@ endif
 
 all: ewts$(SHLIBSUFFIX)
 
-ewts-parser.o:  ewts-parser.c ewts-parser.h
+ewts-parser.o:  ewts-parser.c ewts-parser.h ewts-common.h
 	$(CC) $(CFLAGS) ewts-parser.c -o $@
   
 ewts-parser.c: ewts-parser.l
