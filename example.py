@@ -16,7 +16,7 @@ ewts_scan.restype = c_char_p
 def ewts_to_unicode(ewts_str):
     return ewts_scan(ewts_str.encode(encoding='UTF-8')).decode(encoding='UTF-8')
 
-tabl = ["brgyud"]
+tabl = ["'drad"]
 
 for t in tabl:
     print(ewts_to_unicode(t))
