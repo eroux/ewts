@@ -36,8 +36,8 @@ then
   if [ -d /usr/mingw32 ]; then
     MINGWSTR=mingw32
   else
-    if [ -d /usr/i386-mingw32msvc ]; then
-      MINGWSTR=i386-mingw32msvc
+    if [ -d /usr/i686-w64-mingw32 ]; then
+      MINGWSTR=i686-w64-mingw32
     else
       if [ -d /usr/i586-mingw32msvc ]; then
         MINGWSTR=i586-mingw32msvc
